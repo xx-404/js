@@ -144,7 +144,17 @@
       return '<div class="alert-item ' + cls + '"><div class="row-line"><strong>' + e(a.type) + '</strong>' + badge(a.status) + '</div><small>' + e(a.line) + ' \u00b7 ' + e(a.owner) + ' \u00b7 ' + e(a.time) + '</small><div>' + e(a.remark) + '</div></div>';
     }).join('');
 
-    return '<div class="page-header"><div><h2>生产看板</h2><p>全局生产概览与实时监控</p></div></div>' +
+    return '<div class="page-header"><div><h2>生产看板</h2><p>全局生产概览与实时监控</p></div>' +
+      '<div class="clock-widget">' +
+        '<div class="clock-time-row"><span class="clock-live-dot"></span><span class="clock-time" id="clockTime">--:--:--</span></div>' +
+        '<div class="clock-date" id="clockDate">----年--月--日 星期-</div>' +
+        '<div class="clock-shift-row">' +
+          '<span class="shift-badge" id="shiftBadge">--</span>' +
+          '<span class="clock-countdown" id="shiftCountdown">--</span>' +
+        '</div>' +
+        '<div class="clock-progress"><div class="clock-progress-fill" id="shiftProgress" style="width:0%"></div></div>' +
+      '</div>' +
+      '</div>' +
       '<div class="stats-grid">' +
         '<div class="metric-card"><small>总工单数</small><strong>' + orders.length + '</strong><span>个</span></div>' +
         '<div class="metric-card"><small>今日完成</small><strong>' + totalDone.toLocaleString() + '</strong><span>件</span></div>' +
@@ -509,7 +519,77 @@
     if (fn) fn();
   }
 
-  function bindDashboardEvents() {}
+  function bindDashboardEvents() {
+    var weekNames = ['日', '一', '二', '三', '四', '五', '六'];
+
+    function updateClock() {
+      var now = new Date();
+      var clockEl = document.getElementById('clockTime');
+      var dateEl = document.getElementById('clockDate');
+      var badgeEl = document.getElementById('shiftBadge');
+      var countdownEl = document.getElementById('shiftCountdown');
+      var progressEl = document.getElementById('shiftProgress');
+      if (!clockEl) return;
+
+      // Time
+      var hh = String(now.getHours()).padStart(2, '0');
+      var mm = String(now.getMinutes()).padStart(2, '0');
+      var ss = String(now.getSeconds()).padStart(2, '0');
+      clockEl.textContent = hh + ':' + mm + ':' + ss;
+
+      // Date
+      var y = now.getFullYear();
+      var mo = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      var w = weekNames[now.getDay()];
+      dateEl.textContent = y + '年' + mo + '月' + d + '日 星期' + w;
+
+      // Shift calculation
+      var hour = now.getHours();
+      var isDay = hour >= 8 && hour < 20;
+      var shiftStart, shiftEnd;
+
+      if (isDay) {
+        shiftStart = new Date(now); shiftStart.setHours(8, 0, 0, 0);
+        shiftEnd = new Date(now); shiftEnd.setHours(20, 0, 0, 0);
+      } else {
+        if (hour >= 20) {
+          shiftStart = new Date(now); shiftStart.setHours(20, 0, 0, 0);
+          shiftEnd = new Date(now); shiftEnd.setDate(shiftEnd.getDate() + 1); shiftEnd.setHours(8, 0, 0, 0);
+        } else {
+          shiftStart = new Date(now); shiftStart.setDate(shiftStart.getDate() - 1); shiftStart.setHours(20, 0, 0, 0);
+          shiftEnd = new Date(now); shiftEnd.setHours(8, 0, 0, 0);
+        }
+      }
+
+      var totalMs = shiftEnd - shiftStart;
+      var elapsedMs = now - shiftStart;
+      var remainMs = shiftEnd - now;
+      var progress = Math.min(100, Math.max(0, (elapsedMs / totalMs) * 100));
+
+      // Shift badge
+      badgeEl.className = 'shift-badge ' + (isDay ? 'day' : 'night');
+      badgeEl.textContent = isDay ? '\u2600 白班 08:00-20:00' : '\u263E 夜班 20:00-08:00';
+
+      // Countdown
+      var rh = Math.floor(remainMs / 3600000);
+      var rm = Math.floor((remainMs % 3600000) / 60000);
+      countdownEl.textContent = '剩余 ' + rh + '时' + rm + '分';
+
+      // Progress bar
+      progressEl.style.width = progress.toFixed(1) + '%';
+      if (progress > 85) {
+        progressEl.style.background = 'linear-gradient(90deg, #f87171, var(--danger))';
+      } else if (progress > 65) {
+        progressEl.style.background = 'linear-gradient(90deg, #fbbf24, var(--warning))';
+      } else {
+        progressEl.style.background = 'linear-gradient(90deg, #34d399, var(--success))';
+      }
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+  }
 
   function bindOrdersEvents() {
     var form = document.getElementById('orderForm');

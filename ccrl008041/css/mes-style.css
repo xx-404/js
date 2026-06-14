@@ -143,6 +143,101 @@ a { text-decoration: none; }
   gap: 16px;
 }
 
+/* ===== Clock & Shift Countdown Widget ===== */
+.clock-widget {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 2px 0;
+}
+
+.clock-time-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clock-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+  animation: clockPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes clockPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 4px rgba(22, 163, 74, 0); }
+}
+
+.clock-time {
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  line-height: 1;
+}
+
+.clock-date {
+  font-size: 13px;
+  color: var(--subtle);
+  font-weight: 500;
+}
+
+.clock-shift-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shift-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.shift-badge.day {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.shift-badge.night {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.clock-countdown {
+  font-size: 12px;
+  color: var(--subtle);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-progress {
+  width: 180px;
+  height: 4px;
+  border-radius: 999px;
+  background: #e7edf7;
+  overflow: hidden;
+}
+
+.clock-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #34d399, var(--success));
+  transition: width 1s linear;
+}
+/* ===== End Clock Widget ===== */
+
 .header-actions,
 .button-row,
 .toolbar-row,
@@ -486,5 +581,9 @@ textarea:focus {
   .timeline-item {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .clock-widget {
+    align-items: flex-start;
+    margin-top: 4px;
   }
 }

@@ -190,6 +190,39 @@ a { text-decoration: none; }
 
 .metric-card strong { font-size: 28px; }
 
+.metric-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trend-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.trend-up {
+  color: #15803d;
+  background: #dcfce7;
+}
+
+.trend-down {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.trend-flat {
+  color: var(--subtle);
+  background: #f1f5f9;
+}
+
 .mini-card,
 .list-card,
 .timeline-item,

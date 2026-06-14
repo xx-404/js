@@ -164,6 +164,10 @@
       safetyRecords: [
         { id: 'SAF-001', type: '巡检', location: 'SMT-01产线', inspector: '李安全', finding: '静电手环佩戴不规范', severity: '低', status: '已整改', date: '2026-06-12' },
         { id: 'SAF-002', type: '事故', location: 'ASM-02产线', inspector: '车间主管', finding: '操作员手部轻微夹伤', severity: '中', status: '处理中', date: '2026-06-13' }
+      ],
+      metricHistory: [
+        { date: '2026-06-12', totalOrders: 3, totalDone: 1580, avgOee: 82.5, defectRate: 2.8 },
+        { date: '2026-06-13', totalOrders: 4, totalDone: 1690, avgOee: 84.2, defectRate: 2.5 }
       ]
     };
   }
@@ -176,7 +180,8 @@
       return Object.assign({}, base, saved, {
         filters: Object.assign({}, base.filters, (saved.filters || {})),
         inventoryTransactions: Array.isArray(saved.inventoryTransactions) ? saved.inventoryTransactions : [],
-        sparepartTransactions: Array.isArray(saved.sparepartTransactions) ? saved.sparepartTransactions : []
+        sparepartTransactions: Array.isArray(saved.sparepartTransactions) ? saved.sparepartTransactions : [],
+        metricHistory: Array.isArray(saved.metricHistory) ? saved.metricHistory : base.metricHistory
       });
     } catch (ex) {
       return base;

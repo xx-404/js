@@ -50,6 +50,61 @@
     return '<div class="panel-head"><div><h3>' + e(title) + '</h3>' + (desc ? '<small>' + e(desc) + '</small>' : '') + '</div>' + (action || '') + '</div>' + body;
   }
 
+  function getTodayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function captureDailySnapshot() {
+    var orders = state().orders || [];
+    var totalDone = orders.reduce(function (s, o) { return s + (o.completedQty || 0); }, 0);
+    var totalDefect = orders.reduce(function (s, o) { return s + (o.defectQty || 0); }, 0);
+    var avgOee = state().equipment.reduce(function (s, eq) { return s + (eq.oee || 0); }, 0) / (state().equipment.length || 1);
+    var defectRate = totalDone > 0 ? parseFloat(((totalDefect / totalDone) * 100).toFixed(1)) : 0;
+    var today = getTodayStr();
+    var history = state().metricHistory || [];
+    var existingIdx = -1;
+    for (var i = 0; i < history.length; i++) {
+      if (history[i].date === today) { existingIdx = i; break; }
+    }
+    var snapshot = {
+      date: today,
+      totalOrders: orders.length,
+      totalDone: totalDone,
+      avgOee: parseFloat(avgOee.toFixed(1)),
+      defectRate: defectRate
+    };
+    if (existingIdx >= 0) {
+      history[existingIdx] = snapshot;
+    } else {
+      history.push(snapshot);
+    }
+    if (history.length > 30) history = history.slice(-30);
+    updateState({ metricHistory: history });
+    return snapshot;
+  }
+
+  function getPreviousSnapshot() {
+    var today = getTodayStr();
+    var history = state().metricHistory || [];
+    for (var i = history.length - 1; i >= 0; i--) {
+      if (history[i].date !== today) return history[i];
+    }
+    return null;
+  }
+
+  function renderTrend(current, previous, inverted) {
+    if (previous === null || previous === undefined) return '';
+    var diff = current - previous;
+    if (Math.abs(diff) < 0.01) return '<span class="trend-indicator trend-flat">→ 持平</span>';
+    var isUp = diff > 0;
+    var isGood = inverted ? !isUp : isUp;
+    var cls = isGood ? 'trend-up' : 'trend-down';
+    var arrow = isUp ? '↑' : '↓';
+    var pct = previous !== 0 ? Math.abs((diff / previous) * 100).toFixed(1) : '—';
+    return '<span class="trend-indicator ' + cls + '">' + arrow + ' ' + pct + '%</span>';
+  }
+
   function toast(msg) {
     var el = document.getElementById('toast');
     if (!el) { el = document.createElement('div'); el.id = 'toast'; el.className = 'toast'; document.body.appendChild(el); }
@@ -131,6 +186,9 @@
     var avgOee = state().equipment.reduce(function (s, eq) { return s + (eq.oee || 0); }, 0) / (state().equipment.length || 1);
     var defectRate = totalDone > 0 ? ((totalDefect / totalDone) * 100).toFixed(1) : '0.0';
 
+    captureDailySnapshot();
+    var prev = getPreviousSnapshot();
+
     var orderRows = orders.map(function (o) {
       return '<tr><td><a href="orders.html">' + e(o.orderNo) + '</a></td><td>' + e(o.productName) + '</td><td>' + e(o.line) + '</td><td>' + badge(o.priority) + '</td><td>' + e(o.status) + '</td><td><div class="progress"><div style="width:' + (o.progress || 0) + '%"></div></div><small>' + (o.progress || 0) + '%</small></td><td>' + o.completedQty + ' / ' + o.planQty + '</td></tr>';
     }).join('');
@@ -146,10 +204,10 @@
 
     return '<div class="page-header"><div><h2>生产看板</h2><p>全局生产概览与实时监控</p></div></div>' +
       '<div class="stats-grid">' +
-        '<div class="metric-card"><small>总工单数</small><strong>' + orders.length + '</strong><span>个</span></div>' +
-        '<div class="metric-card"><small>今日完成</small><strong>' + totalDone.toLocaleString() + '</strong><span>件</span></div>' +
-        '<div class="metric-card"><small>平均OEE</small><strong>' + avgOee.toFixed(1) + '</strong><span>%</span></div>' +
-        '<div class="metric-card"><small>不良率</small><strong>' + defectRate + '</strong><span>%</span></div>' +
+        '<div class="metric-card"><small>总工单数</small><strong>' + orders.length + '</strong><div class="metric-footer"><span>个</span>' + renderTrend(orders.length, prev ? prev.totalOrders : null, false) + '</div></div>' +
+        '<div class="metric-card"><small>今日完成</small><strong>' + totalDone.toLocaleString() + '</strong><div class="metric-footer"><span>件</span>' + renderTrend(totalDone, prev ? prev.totalDone : null, false) + '</div></div>' +
+        '<div class="metric-card"><small>平均OEE</small><strong>' + avgOee.toFixed(1) + '</strong><div class="metric-footer"><span>%</span>' + renderTrend(parseFloat(avgOee.toFixed(1)), prev ? prev.avgOee : null, false) + '</div></div>' +
+        '<div class="metric-card"><small>不良率</small><strong>' + defectRate + '</strong><div class="metric-footer"><span>%</span>' + renderTrend(parseFloat(defectRate), prev ? prev.defectRate : null, true) + '</div></div>' +
       '</div>' +
       '<div class="content-grid">' +
         '<div class="panel">' + sectionCard('活跃工单', '当前生产中的工单列表', '<div class="table-wrap"><table><thead><tr><th>工单号</th><th>产品</th><th>产线</th><th>优先级</th><th>状态</th><th>进度</th><th>完成/计划</th></tr></thead><tbody>' + orderRows + '</tbody></table></div>') + '</div>' +

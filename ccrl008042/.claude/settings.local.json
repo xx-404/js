@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find D:/work/workspace/lvjun/mksaas-template-main/src -name *kanban* -o -name *board* -o -name *product* -o -name *schedul* -o -name *工单*)",
+      "Bash(find D:/work/workspace/lvjun/mksaas-template-main -name *.tsx -o -name *.ts -o -name *.html -o -name *.jsx -o -name *.js)"
+    ]
+  }
+}

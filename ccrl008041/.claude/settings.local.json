@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /c /d /e 2)",
+      "Bash(/dev/null -maxdepth 5 -name package.json -type f)",
+      "Bash(find /e/工作资料/mes/MES/ps-fe/src -type d ! -path */node_modules/*)",
+      "Bash(find /e/工作资料/mes/MES/ps-be -type f \\\\\\(-name *Kanban* -o -name *kanban* -o -name *WorkshopBoard* -o -name *workshopboard* \\\\\\) ! -path */node_modules/* ! -path */target/*)"
+    ]
+  }
+}

@@ -131,6 +131,51 @@
     var avgOee = state().equipment.reduce(function (s, eq) { return s + (eq.oee || 0); }, 0) / (state().equipment.length || 1);
     var defectRate = totalDone > 0 ? ((totalDefect / totalDone) * 100).toFixed(1) : '0.0';
 
+    // -- Line progress comparison chart --
+    var lineMap = {};
+    orders.forEach(function (o) {
+      if (!lineMap[o.line]) lineMap[o.line] = { line: o.line, planQty: 0, completedQty: 0, goodQty: 0, defectQty: 0, orders: [] };
+      lineMap[o.line].planQty += o.planQty || 0;
+      lineMap[o.line].completedQty += o.completedQty || 0;
+      lineMap[o.line].goodQty += o.goodQty || 0;
+      lineMap[o.line].defectQty += o.defectQty || 0;
+      lineMap[o.line].orders.push(o);
+    });
+    var lines = Object.keys(lineMap).sort().map(function (k) { return lineMap[k]; });
+
+    var totalLinePlan = lines.reduce(function (s, l) { return s + l.planQty; }, 0);
+    var totalLineDone = lines.reduce(function (s, l) { return s + l.completedQty; }, 0);
+    var overallPct = totalLinePlan > 0 ? Math.round((totalLineDone / totalLinePlan) * 100) : 0;
+
+    var lineChartHtml = '<div class="line-progress-chart">';
+    lines.forEach(function (line) {
+      var pct = line.planQty > 0 ? Math.round((line.completedQty / line.planQty) * 100) : 0;
+      var activeCount = line.orders.filter(function (o) { return o.status === '生产中'; }).length;
+      var doneCount = line.orders.filter(function (o) { return o.status === '已完成'; }).length;
+      var cls = pct >= 100 ? 'excellent' : pct >= 50 ? 'good' : pct > 0 ? 'behind' : 'idle';
+
+      var ordersDetailHtml = line.orders.map(function (o) {
+        var dotCls = o.status === '已完成' ? 'dot-done' : o.status === '生产中' ? 'dot-running' : 'dot-waiting';
+        return '<span class="line-order-tag"><span class="line-order-dot ' + dotCls + '"></span>' + e(o.orderNo) + ' ' + (o.progress || 0) + '%</span>';
+      }).join('');
+
+      lineChartHtml += '<div class="line-row">' +
+        '<div class="line-name">' + e(line.line) + '</div>' +
+        '<div class="line-bar-col">' +
+          '<div class="line-bar-track"><div class="line-bar-fill ' + cls + '" style="width:' + Math.min(pct, 100) + '%">' +
+            (pct > 8 ? '<span class="line-bar-pct">' + pct + '%</span>' : '') +
+          '</div></div>' +
+          '<div class="line-bar-meta">' +
+            '<span>' + line.completedQty.toLocaleString() + ' / ' + line.planQty.toLocaleString() + ' 件</span>' +
+            '<span>' + line.orders.length + ' 个工单 \u00b7 ' + activeCount + ' 生产中 \u00b7 ' + doneCount + ' 已完成</span>' +
+          '</div>' +
+          '<div class="line-orders-detail">' + ordersDetailHtml + '</div>' +
+        '</div>' +
+        '<div class="line-stats"><strong>' + pct + '%</strong>' + (line.completedQty >= line.planQty && line.planQty > 0 ? '已完工' : '完成率') + '</div>' +
+      '</div>';
+    });
+    lineChartHtml += '</div>';
+
     var orderRows = orders.map(function (o) {
       return '<tr><td><a href="orders.html">' + e(o.orderNo) + '</a></td><td>' + e(o.productName) + '</td><td>' + e(o.line) + '</td><td>' + badge(o.priority) + '</td><td>' + e(o.status) + '</td><td><div class="progress"><div style="width:' + (o.progress || 0) + '%"></div></div><small>' + (o.progress || 0) + '%</small></td><td>' + o.completedQty + ' / ' + o.planQty + '</td></tr>';
     }).join('');
@@ -151,6 +196,7 @@
         '<div class="metric-card"><small>平均OEE</small><strong>' + avgOee.toFixed(1) + '</strong><span>%</span></div>' +
         '<div class="metric-card"><small>不良率</small><strong>' + defectRate + '</strong><span>%</span></div>' +
       '</div>' +
+      '<div class="panel">' + sectionCard('产线进度对比', '按产线汇总工单生产完成情况', lineChartHtml, '<span class="badge running">综合 ' + overallPct + '%</span>') + '</div>' +
       '<div class="content-grid">' +
         '<div class="panel">' + sectionCard('活跃工单', '当前生产中的工单列表', '<div class="table-wrap"><table><thead><tr><th>工单号</th><th>产品</th><th>产线</th><th>优先级</th><th>状态</th><th>进度</th><th>完成/计划</th></tr></thead><tbody>' + orderRows + '</tbody></table></div>') + '</div>' +
         '<div class="stack-list">' +

@@ -7,6 +7,7 @@
         status: 'all',
         keyword: ''
       },
+      metricHistory: [],
       orders: [
         { id: 'ORD-1001', orderNo: 'MO-202606-101', productName: '智能传感器控制板', line: 'SMT-01', priority: '高', planQty: 1800, completedQty: 1260, goodQty: 1225, defectQty: 35, status: '生产中', planDate: '2026-06-13', remark: '重点订单，需优先备料', progress: 70, operator: '一班组', lastUpdate: '09:30' },
         { id: 'ORD-1002', orderNo: 'MO-202606-102', productName: '伺服驱动器主控单元', line: 'ASM-02', priority: '中', planQty: 960, completedQty: 430, goodQty: 419, defectQty: 11, status: '生产中', planDate: '2026-06-13', remark: '下午安排终检抽检', progress: 45, operator: '二班组', lastUpdate: '10:05' },
@@ -176,7 +177,8 @@
       return Object.assign({}, base, saved, {
         filters: Object.assign({}, base.filters, (saved.filters || {})),
         inventoryTransactions: Array.isArray(saved.inventoryTransactions) ? saved.inventoryTransactions : [],
-        sparepartTransactions: Array.isArray(saved.sparepartTransactions) ? saved.sparepartTransactions : []
+        sparepartTransactions: Array.isArray(saved.sparepartTransactions) ? saved.sparepartTransactions : [],
+        metricHistory: Array.isArray(saved.metricHistory) ? saved.metricHistory : []
       });
     } catch (ex) {
       return base;

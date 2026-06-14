@@ -122,6 +122,68 @@
       '</div>';
   }
 
+  function aggregateLineProgress() {
+    var orders = state().orders || [];
+    var map = {};
+    var order = [];
+    orders.forEach(function (o) {
+      var line = o.line || '未分配';
+      if (!map[line]) {
+        map[line] = { line: line, planQty: 0, completedQty: 0, orderCount: 0, activeCount: 0, doneCount: 0 };
+        order.push(line);
+      }
+      map[line].planQty += (o.planQty || 0);
+      map[line].completedQty += (o.completedQty || 0);
+      map[line].orderCount += 1;
+      if (o.status === '生产中') map[line].activeCount += 1;
+      if (o.status === '已完成') map[line].doneCount += 1;
+    });
+    var list = order.map(function (k) {
+      var item = map[k];
+      item.rate = item.planQty > 0 ? Math.round((item.completedQty / item.planQty) * 100) : 0;
+      return item;
+    });
+    list.sort(function (a, b) { return b.rate - a.rate; });
+    return list;
+  }
+
+  function lineProgressTier(rate) {
+    if (rate >= 90) return { cls: 'high', label: '接近完成' };
+    if (rate >= 60) return { cls: 'good', label: '进展顺利' };
+    if (rate >= 30) return { cls: 'mid', label: '需关注' };
+    return { cls: 'low', label: '进度落后' };
+  }
+
+  function renderLineProgressPanel() {
+    var list = aggregateLineProgress();
+    if (!list.length) {
+      return '<div class="panel">' + sectionCard('各产线生产进度对比', '按产线汇总工单完成进度', '<div class="empty">暂无工单数据</div>') + '</div>';
+    }
+
+    var rows = list.map(function (item) {
+      var tier = lineProgressTier(item.rate);
+      return '<div class="line-progress-item">' +
+        '<div class="line-progress-top">' +
+          '<div class="line-progress-name"><strong>' + e(item.line) + '</strong><span class="line-progress-tag ' + tier.cls + '">' + tier.label + '</span></div>' +
+          '<div class="line-progress-rate ' + tier.cls + '">' + item.rate + '%</div>' +
+        '</div>' +
+        '<div class="line-progress-bar"><div class="line-progress-fill ' + tier.cls + '" style="width:' + item.rate + '%"></div></div>' +
+        '<div class="line-progress-meta"><span>' + item.completedQty.toLocaleString() + ' / ' + item.planQty.toLocaleString() + ' 件</span><span>' + item.orderCount + ' 个工单 \u00b7 ' + item.activeCount + ' 个生产中 \u00b7 ' + item.doneCount + ' 个已完成</span></div>' +
+      '</div>';
+    }).join('');
+
+    var hint = '';
+    if (list.length > 1) {
+      var leader = list[0];
+      var laggard = list[list.length - 1];
+      if (leader.line !== laggard.line) {
+        hint = '<div class="line-progress-summary"><span class="lead"><em>领先</em>' + e(leader.line) + ' ' + leader.rate + '%</span><span class="lag"><em>落后</em>' + e(laggard.line) + ' ' + laggard.rate + '%</span></div>';
+      }
+    }
+
+    return '<div class="panel">' + sectionCard('各产线生产进度对比', '按产线汇总工单完成进度，快速识别领先与落后产线', '<div class="line-progress-list">' + rows + '</div>' + hint) + '</div>';
+  }
+
   function renderDashboard() {
     var orders = state().orders || [];
     var totalPlan = orders.reduce(function (s, o) { return s + (o.planQty || 0); }, 0);
@@ -151,6 +213,7 @@
         '<div class="metric-card"><small>平均OEE</small><strong>' + avgOee.toFixed(1) + '</strong><span>%</span></div>' +
         '<div class="metric-card"><small>不良率</small><strong>' + defectRate + '</strong><span>%</span></div>' +
       '</div>' +
+      renderLineProgressPanel() +
       '<div class="content-grid">' +
         '<div class="panel">' + sectionCard('活跃工单', '当前生产中的工单列表', '<div class="table-wrap"><table><thead><tr><th>工单号</th><th>产品</th><th>产线</th><th>优先级</th><th>状态</th><th>进度</th><th>完成/计划</th></tr></thead><tbody>' + orderRows + '</tbody></table></div>') + '</div>' +
         '<div class="stack-list">' +

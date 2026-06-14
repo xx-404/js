@@ -2,6 +2,7 @@
 
   var _state = window.MESData.state;
   var pageKey = window.MES_PAGE || 'dashboard';
+  var _clockTimer = null;
 
   function state() { return _state; }
   function updateState(patch) {
@@ -144,7 +145,13 @@
       return '<div class="alert-item ' + cls + '"><div class="row-line"><strong>' + e(a.type) + '</strong>' + badge(a.status) + '</div><small>' + e(a.line) + ' \u00b7 ' + e(a.owner) + ' \u00b7 ' + e(a.time) + '</small><div>' + e(a.remark) + '</div></div>';
     }).join('');
 
-    return '<div class="page-header"><div><h2>生产看板</h2><p>全局生产概览与实时监控</p></div></div>' +
+    return '<div class="page-header"><div><h2>生产看板</h2><p>全局生产概览与实时监控</p></div>' +
+        '<div class="dashboard-clock" id="liveClock">' +
+          '<div class="clock-top"><span class="clock-shift" id="shiftBadge">--</span><span class="clock-date" id="liveDate">--</span></div>' +
+          '<div class="clock-time" id="liveTime">--:--:--</div>' +
+          '<div class="clock-countdown"><span class="countdown-label">本班剩余</span><span class="countdown-value" id="shiftRemaining">--:--:--</span></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="stats-grid">' +
         '<div class="metric-card"><small>总工单数</small><strong>' + orders.length + '</strong><span>个</span></div>' +
         '<div class="metric-card"><small>今日完成</small><strong>' + totalDone.toLocaleString() + '</strong><span>件</span></div>' +
@@ -509,7 +516,63 @@
     if (fn) fn();
   }
 
-  function bindDashboardEvents() {}
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+  function getShiftInfo(now) {
+    var h = now.getHours();
+    var isDay = h >= 8 && h < 20;
+    var end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    if (isDay) {
+      end.setHours(20);
+    } else if (h >= 20) {
+      end.setDate(end.getDate() + 1);
+      end.setHours(8);
+    } else {
+      end.setHours(8);
+    }
+    var remainingMs = end.getTime() - now.getTime();
+    if (remainingMs < 0) remainingMs = 0;
+    return { shift: isDay ? '白班' : '夜班', isDay: isDay, remainingMs: remainingMs };
+  }
+
+  function fmtDuration(ms) {
+    var total = Math.floor(ms / 1000);
+    var hh = Math.floor(total / 3600);
+    var mm = Math.floor((total % 3600) / 60);
+    var ss = total % 60;
+    return pad2(hh) + ':' + pad2(mm) + ':' + pad2(ss);
+  }
+
+  function updateClock() {
+    var el = document.getElementById('liveClock');
+    if (!el) {
+      if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
+      return;
+    }
+    var now = new Date();
+    var weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    var dateStr = now.getFullYear() + '年' + pad2(now.getMonth() + 1) + '月' + pad2(now.getDate()) + '日 星期' + weekdays[now.getDay()];
+    var timeStr = pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+    var info = getShiftInfo(now);
+    var dateEl = document.getElementById('liveDate');
+    var timeEl = document.getElementById('liveTime');
+    var badgeEl = document.getElementById('shiftBadge');
+    var remEl = document.getElementById('shiftRemaining');
+    if (dateEl) dateEl.textContent = dateStr;
+    if (timeEl) timeEl.textContent = timeStr;
+    if (badgeEl) {
+      badgeEl.textContent = info.shift;
+      badgeEl.className = 'clock-shift ' + (info.isDay ? 'day' : 'night');
+    }
+    if (remEl) remEl.textContent = fmtDuration(info.remainingMs);
+  }
+
+  function bindDashboardEvents() {
+    if (_clockTimer) { clearInterval(_clockTimer); _clockTimer = null; }
+    if (!document.getElementById('liveClock')) return;
+    updateClock();
+    _clockTimer = setInterval(updateClock, 1000);
+  }
 
   function bindOrdersEvents() {
     var form = document.getElementById('orderForm');

@@ -488,3 +488,81 @@ textarea:focus {
     align-items: flex-start;
   }
 }
+
+/* Dashboard live clock + shift countdown */
+.dashboard-clock {
+  display: grid;
+  gap: 8px;
+  min-width: 240px;
+  padding: 14px 18px;
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%);
+  text-align: right;
+}
+
+.clock-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.clock-shift {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.clock-shift.day { background: #fef3c7; color: #a16207; }
+
+.clock-shift.night { background: #e0e7ff; color: #4338ca; }
+
+.clock-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
+.clock-time {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-countdown {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.countdown-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--subtle);
+}
+
+.countdown-value {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 720px) {
+  .dashboard-clock {
+    width: 100%;
+    text-align: left;
+  }
+  .clock-top,
+  .clock-countdown { justify-content: flex-start; }
+}
